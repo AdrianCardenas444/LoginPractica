@@ -57,24 +57,27 @@
             <Label Content="CONTRASEÑA" Foreground="#66c0f4" FontSize="10" FontWeight="Bold"/>
             <PasswordBox x:Name="txtPassword" Margin="0,0,0,10"/>
 
-            <TextBlock x:Name="lblMensaje" 
-                       Text="" 
-                       Foreground="#ff4c4c" 
-                       FontSize="13" 
-                       FontWeight="SemiBold"
-                       Margin="0,0,0,15" 
-                       TextWrapping="Wrap"
-                       HorizontalAlignment="Center"
-                       TextAlignment="Center"/>
+            <TextBlock x:Name="lblMensaje" Text="" Foreground="#ff4c4c" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,15" TextWrapping="Wrap" TextAlignment="Center"/>
 
             <Grid Margin="0,5,0,0">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Button x:Name="btnSalir" Content="Salir" Grid.Column="0" HorizontalAlignment="Left" Background="Transparent" Foreground="#c7d5e0" BorderThickness="0" Click="BtnSalir_Click" Cursor="Hand"/>
-                <Button x:Name="btnLogin" Content="Iniciar Sesión" Grid.Column="1" Style="{StaticResource SteamButton}" Width="140" Click="BtnLogin_Click"/>
+                <Button x:Name="btnSalir" Content="Salir" Grid.Column="0" Click="BtnSalir_Click" Background="Transparent" Foreground="#c7d5e0" BorderThickness="0" Cursor="Hand"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button x:Name="btnRegistro" Content="Crear Cuenta" Margin="0,0,10,0" Width="100" Click="BtnRegistro_Click" Background="#3d4450" Foreground="White" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="2"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button x:Name="btnLogin" Content="Iniciar Sesión" Width="110" Style="{StaticResource SteamButton}" Click="BtnLogin_Click"/>
+                </StackPanel>
             </Grid>
         </StackPanel>
     </Grid>

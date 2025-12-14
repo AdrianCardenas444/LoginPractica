@@ -1,92 +1,71 @@
-﻿using System.Collections.Generic;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 
 namespace LoginPractica
 {
     public partial class MainWindow : Window
     {
-        // 1. Base de datos simulada
-        private Dictionary<string, string> baseDeDatosUsuarios = new Dictionary<string, string>()
-        {
-            { "admin", "1234" },
-            { "gamer", "steam" },
-            { "profesor", "clase" }
-        };
-
-        // 2. Contador de intentos fallidos
-        private Dictionary<string, int> intentosFallidos = new Dictionary<string, int>();
+        private DatabaseHelper dbHelper = new DatabaseHelper();
+        private int intentosFallidos = 0;
+        private string ultimoUsuario = "";
 
         public MainWindow()
         {
             InitializeComponent();
-
-            // Inicializamos contadores a 0
-            foreach (var user in baseDeDatosUsuarios.Keys)
-            {
-                intentosFallidos.Add(user, 0);
-            }
         }
 
+        // --- LOGIN ---
         private void BtnLogin_Click(object sender, RoutedEventArgs e)
         {
-            // Limpiamos mensaje anterior al pulsar el botón
             lblMensaje.Text = "";
-
-            string usuario = txtUsuario.Text;
+            string usuario = txtUsuario.Text.Trim();
             string password = txtPassword.Password;
 
-            // CASO 3: Campos vacíos
             if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(password))
             {
-                MostrarError("Introduzca datos");
+                MostrarError("Introduce usuario y contraseña.");
                 return;
             }
 
-            // CASO 2: El usuario no existe
-            if (!baseDeDatosUsuarios.ContainsKey(usuario))
+            if (usuario == ultimoUsuario && intentosFallidos >= 3)
             {
-                MostrarError("El usuario introducido no existe");
+                MostrarError("Usuario bloqueado temporalmente.");
                 return;
             }
 
-            // CASO 6 (Bloqueo previo): Verificar si ya estaba bloqueado
-            if (intentosFallidos[usuario] >= 3)
+            if (dbHelper.ValidarLogin(usuario, password))
             {
-                MostrarError($"El usuario '{usuario}' está bloqueado temporalmente.");
-                return;
-            }
+                intentosFallidos = 0;
 
-            // VERIFICACIÓN DE CONTRASEÑA
-            if (baseDeDatosUsuarios[usuario] == password)
-            {
-                // ÉXITO
-                intentosFallidos[usuario] = 0; // Resetear intentos
-
-                // Mensaje opcional en verde antes de cambiar
-                lblMensaje.Foreground = Brushes.LightGreen;
-                lblMensaje.Text = "Acceso correcto...";
-
-                // Navegación
-                HomeWindow home = new HomeWindow();
+                // --- CAMBIO AQUÍ: Pasamos el usuario a la nueva ventana ---
+                HomeWindow home = new HomeWindow(usuario);
                 home.Show();
                 this.Close();
             }
             else
             {
-                // CASO 1 y 6: Contraseña mal y contador
-                intentosFallidos[usuario]++;
-                int fallos = intentosFallidos[usuario];
+                if (usuario != ultimoUsuario) { intentosFallidos = 0; ultimoUsuario = usuario; }
+                intentosFallidos++;
+                MostrarError($"Credenciales incorrectas. Intento {intentosFallidos} de 3.");
+            }
+        }
 
-                if (fallos >= 3)
-                {
-                    MostrarError("Usuario Bloqueado por seguridad.");
-                }
-                else
-                {
-                    // Solo dice que la contraseña está mal
-                    MostrarError($"Contraseña incorrecta. Intento {fallos} de 3.");
-                }
+        // --- REGISTRO ---
+        private void BtnRegistro_Click(object sender, RoutedEventArgs e)
+        {
+            string usuario = txtUsuario.Text.Trim();
+            string password = txtPassword.Password;
+
+            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(password))
+            {
+                MostrarError("Para crear cuenta, rellena los datos.");
+                return;
+            }
+
+            if (dbHelper.RegistrarUsuario(usuario, password))
+            {
+                lblMensaje.Foreground = Brushes.LightGreen;
+                lblMensaje.Text = "¡Cuenta creada! Inicia sesión.";
             }
         }
 
@@ -95,10 +74,9 @@ namespace LoginPractica
             Application.Current.Shutdown();
         }
 
-        // Método auxiliar para escribir en rojo en la ventana
         private void MostrarError(string mensaje)
         {
-            lblMensaje.Foreground = new SolidColorBrush(Color.FromRgb(255, 76, 76)); // Rojo Steam
+            lblMensaje.Foreground = new SolidColorBrush(Color.FromRgb(255, 76, 76));
             lblMensaje.Text = mensaje;
         }
     }
