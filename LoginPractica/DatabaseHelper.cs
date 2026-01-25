@@ -7,72 +7,101 @@ namespace LoginPractica
 {
     public class DatabaseHelper
     {
-        // CAMBIA "Pwd=;" por tu contraseña de MySQL si tienes una (ej: Pwd=root;)
         private string connectionString = "Server=localhost;Database=PracticaLoginDB;Uid=root;Pwd=;";
 
-        public MySqlConnection GetConnection()
-        {
-            return new MySqlConnection(connectionString);
-        }
+        public MySqlConnection GetConnection() => new MySqlConnection(connectionString);
 
-        // VALIDAR LOGIN (SELECT)
-        public bool ValidarLogin(string usuario, string password)
+        // Validar Login recuperando Rol y Estado [cite: 62, 67]
+        public string ValidarLogin(string usuario, string password)
         {
             using (MySqlConnection conn = GetConnection())
             {
                 try
                 {
                     conn.Open();
-                    string query = "SELECT COUNT(*) FROM Usuarios WHERE nombre_usuario = @user AND password = @pass";
+                    string query = "SELECT rol, estado FROM Usuarios WHERE nombre_usuario = @u AND password = @p";
                     MySqlCommand cmd = new MySqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@user", usuario);
-                    cmd.Parameters.AddWithValue("@pass", password);
-
-                    int count = Convert.ToInt32(cmd.ExecuteScalar());
-                    return count > 0;
+                    cmd.Parameters.AddWithValue("@u", usuario);
+                    cmd.Parameters.AddWithValue("@p", password);
+                    using (MySqlDataReader r = cmd.ExecuteReader())
+                    {
+                        if (r.Read())
+                        {
+                            if (r.GetInt32("estado") == 0) return "BANEADO"; // [cite: 80]
+                            return r.GetString("rol"); // [cite: 58]
+                        }
+                    }
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error de conexión BBDD: " + ex.Message);
-                    return false;
-                }
+                catch (Exception ex) { MessageBox.Show("Error BBDD: " + ex.Message); }
+                return null;
             }
         }
 
-        // REGISTRAR USUARIO (INSERT)
-        public bool RegistrarUsuario(string usuario, string password)
+        // --- OPERACIONES CRUD (Punto 3) [cite: 68] ---
+
+        public DataTable ObtenerUsuarios()
+        {
+            DataTable dt = new DataTable();
+            using (MySqlConnection conn = GetConnection())
+            {
+                conn.Open();
+                string query = "SELECT id, nombre_usuario, password, email, rol, estado FROM Usuarios";
+                new MySqlDataAdapter(query, conn).Fill(dt);
+            }
+            return dt; // [cite: 76]
+        }
+
+        public bool AgregarUsuarioAdmin(string u, string p, string e, string r)
         {
             using (MySqlConnection conn = GetConnection())
             {
-                try
-                {
-                    conn.Open();
-                    // 1. Verificar si ya existe
-                    string checkQuery = "SELECT COUNT(*) FROM Usuarios WHERE nombre_usuario = @user";
-                    MySqlCommand checkCmd = new MySqlCommand(checkQuery, conn);
-                    checkCmd.Parameters.AddWithValue("@user", usuario);
-                    int exist = Convert.ToInt32(checkCmd.ExecuteScalar());
+                conn.Open();
+                string query = "INSERT INTO Usuarios (nombre_usuario, password, email, rol, estado) VALUES (@u, @p, @e, @r, 1)";
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@u", u); cmd.Parameters.AddWithValue("@p", p);
+                cmd.Parameters.AddWithValue("@e", e); cmd.Parameters.AddWithValue("@r", r);
+                return cmd.ExecuteNonQuery() > 0; // [cite: 70]
+            }
+        }
 
-                    if (exist > 0)
-                    {
-                        MessageBox.Show("El nombre de usuario ya existe. Prueba otro.");
-                        return false;
-                    }
+        public bool EditarUsuario(int id, string p, string e, string r, int est)
+        {
+            using (MySqlConnection conn = GetConnection())
+            {
+                conn.Open();
+                string query = "UPDATE Usuarios SET password=@p, email=@e, rol=@r, estado=@est WHERE id=@id";
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@p", p); cmd.Parameters.AddWithValue("@e", e);
+                cmd.Parameters.AddWithValue("@r", r); cmd.Parameters.AddWithValue("@est", est);
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteNonQuery() > 0; // [cite: 71, 79]
+            }
+        }
 
-                    // 2. Insertar nuevo
-                    string query = "INSERT INTO Usuarios (nombre_usuario, password) VALUES (@user, @pass)";
-                    MySqlCommand cmd = new MySqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@user", usuario);
-                    cmd.Parameters.AddWithValue("@pass", password);
+        public bool EliminarUsuario(int id)
+        {
+            using (MySqlConnection conn = GetConnection())
+            {
+                conn.Open();
+                string query = "DELETE FROM Usuarios WHERE id=@id";
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteNonQuery() > 0; // [cite: 74]
+            }
+        }
 
-                    int filas = cmd.ExecuteNonQuery();
-                    return filas > 0;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error al registrar: " + ex.Message);
-                    return false;
-                }
+        // --- EXTENSIÓN: LOG DE ACTIVIDAD  ---
+        public void RegistrarLog(string admin, string accion, string afectado)
+        {
+            using (MySqlConnection conn = GetConnection())
+            {
+                conn.Open();
+                string query = "INSERT INTO LogActividad (admin_usuario, accion, usuario_afectado) VALUES (@a, @ac, @af)";
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@a", admin);
+                cmd.Parameters.AddWithValue("@ac", accion);
+                cmd.Parameters.AddWithValue("@af", afectado);
+                cmd.ExecuteNonQuery();
             }
         }
     }

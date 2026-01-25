@@ -1,0 +1,74 @@
+﻿<Window x:Class="LoginPractica.AdminWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Panel de Administración y Auditoría" Height="800" Width="1050"
+        WindowStartupLocation="CenterScreen" Background="#1b2838">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="1.3*"/>
+            </Grid.ColumnDefinitions>
+
+            <DockPanel Grid.Column="0" Margin="0,0,15,0">
+                <TextBlock Text="GESTIÓN DE USUARIOS" Foreground="White" FontSize="20" FontWeight="Bold" DockPanel.Dock="Top" Margin="0,0,0,10"/>
+
+                <Border Background="#171a21" Padding="10" CornerRadius="5" DockPanel.Dock="Top" Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="🔍 Filtrar por nombre:" Foreground="#66c0f4" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="Bold"/>
+                        <TextBox x:Name="txtBusquedaAdmin" Grid.Column="1" Background="#2a475e" Foreground="White" BorderThickness="0" Padding="5" TextChanged="TxtBusquedaAdmin_TextChanged"/>
+                    </Grid>
+                </Border>
+
+                <DataGrid x:Name="gridUsuarios" SelectionChanged="GridUsuarios_SelectionChanged" IsReadOnly="True" Background="#2a475e" Foreground="Black"/>
+            </DockPanel>
+
+            <ScrollViewer Grid.Column="1">
+                <Border Background="#171a21" CornerRadius="10" Padding="15">
+                    <StackPanel>
+                        <TextBlock Text="EDICIÓN DE PERFIL" Foreground="#66c0f4" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                        <Label Content="ID Sistema:" Foreground="Gray"/>
+                        <TextBox x:Name="txtId" IsReadOnly="True" Background="#333" Foreground="Gray" Margin="0,0,0,10" Padding="5"/>
+
+                        <Label Content="Usuario:" Foreground="White"/>
+                        <TextBox x:Name="txtUser" Margin="0,0,0,10" Padding="5"/>
+
+                        <Label Content="Contraseña:" Foreground="White"/>
+                        <TextBox x:Name="txtPass" Margin="0,0,0,10" Padding="5"/>
+
+                        <Label Content="Email:" Foreground="White"/>
+                        <TextBox x:Name="txtEmail" Margin="0,0,0,10" Padding="5"/>
+
+                        <Label Content="Rol:" Foreground="White"/>
+                        <ComboBox x:Name="cmbRol" Margin="0,0,0,10" Padding="5">
+                            <ComboBoxItem Content="user"/>
+                            <ComboBoxItem Content="admin"/>
+                        </ComboBox>
+
+                        <CheckBox x:Name="chkBan" Content="USUARIO BANEADO" Foreground="#ff4c4c" Margin="0,10" FontWeight="Bold"/>
+
+                        <Button Content="💾 Guardar Cambios" Click="BtnEditar_Click" Margin="0,5" Padding="10" Background="#66c0f4" FontWeight="Bold"/>
+                        <Button Content="➕ Crear Nuevo" Click="BtnCrear_Click" Margin="0,5" Padding="10" Background="#5c7e10" Foreground="White" FontWeight="Bold"/>
+                        <Button Content="🗑 Eliminar" Click="BtnEliminar_Click" Margin="0,5,0,15" Padding="10" Background="#ff4c4c" Foreground="White" FontWeight="Bold"/>
+
+                        <Button Content="Cerrar Panel" Click="BtnCerrar_Click" Background="Transparent" Foreground="Gray" BorderThickness="0"/>
+                    </StackPanel>
+                </Border>
+            </ScrollViewer>
+        </Grid>
+
+        <GroupBox Header="HISTORIAL DE ACTIVIDAD (LOGS DE AUDITORÍA)" Grid.Row="1" Margin="0,15,0,0" Foreground="#66c0f4" FontWeight="Bold">
+            <DataGrid x:Name="gridLogs" AutoGenerateColumns="True" IsReadOnly="True" Background="#101215" Foreground="Black"/>
+        </GroupBox>
+    </Grid>
+</Window>

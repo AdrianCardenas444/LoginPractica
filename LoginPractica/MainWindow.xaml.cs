@@ -6,78 +6,48 @@ namespace LoginPractica
     public partial class MainWindow : Window
     {
         private DatabaseHelper dbHelper = new DatabaseHelper();
-        private int intentosFallidos = 0;
-        private string ultimoUsuario = "";
 
-        public MainWindow()
-        {
-            InitializeComponent();
-        }
+        public MainWindow() => InitializeComponent();
 
-        // --- LOGIN ---
         private void BtnLogin_Click(object sender, RoutedEventArgs e)
         {
-            lblMensaje.Text = "";
             string usuario = txtUsuario.Text.Trim();
-            string password = txtPassword.Password;
+            string pass = txtPassword.Password;
 
-            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrEmpty(usuario) || string.IsNullOrEmpty(pass)) { lblMensaje.Text = "Rellena todos los campos"; return; }
+
+            string rol = dbHelper.ValidarLogin(usuario, pass); 
+
+            if (rol == "BANEADO") { lblMensaje.Text = "ACCESO DENEGADO: Usuario baneado."; return; } 
+            if (rol != null) 
             {
-                MostrarError("Introduce usuario y contraseña.");
-                return;
-            }
-
-            if (usuario == ultimoUsuario && intentosFallidos >= 3)
-            {
-                MostrarError("Usuario bloqueado temporalmente.");
-                return;
-            }
-
-            if (dbHelper.ValidarLogin(usuario, password))
-            {
-                intentosFallidos = 0;
-
-                // --- CAMBIO AQUÍ: Pasamos el usuario a la nueva ventana ---
-                HomeWindow home = new HomeWindow(usuario);
-                home.Show();
+                new HomeWindow(usuario, rol).Show();
                 this.Close();
-            }
-            else
-            {
-                if (usuario != ultimoUsuario) { intentosFallidos = 0; ultimoUsuario = usuario; }
-                intentosFallidos++;
-                MostrarError($"Credenciales incorrectas. Intento {intentosFallidos} de 3.");
-            }
+            } 
+            else { lblMensaje.Text = "Usuario o contraseña incorrectos."; }
         }
 
-        // --- REGISTRO ---
         private void BtnRegistro_Click(object sender, RoutedEventArgs e)
         {
-            string usuario = txtUsuario.Text.Trim();
-            string password = txtPassword.Password;
+            string user = txtUsuario.Text.Trim();
+            string pass = txtPassword.Password;
+            string email = txtEmail.Text.Trim();
 
-            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(password))
-            {
-                MostrarError("Para crear cuenta, rellena los datos.");
-                return;
+            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || string.IsNullOrEmpty(email)) 
+            { 
+                lblMensaje.Text = "Para registrarte necesitas Usuario, Pass y Email."; 
+                return; 
             }
 
-            if (dbHelper.RegistrarUsuario(usuario, password))
+            if (dbHelper.AgregarUsuarioAdmin(user, pass, email, "user")) 
             {
                 lblMensaje.Foreground = Brushes.LightGreen;
-                lblMensaje.Text = "¡Cuenta creada! Inicia sesión.";
+                lblMensaje.Text = "¡Registro exitoso! Ya puedes loguearte.";
             }
         }
 
-        private void BtnSalir_Click(object sender, RoutedEventArgs e)
-        {
-            Application.Current.Shutdown();
-        }
+        private void BtnSalir_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
 
-        private void MostrarError(string mensaje)
-        {
-            lblMensaje.Foreground = new SolidColorBrush(Color.FromRgb(255, 76, 76));
-            lblMensaje.Text = mensaje;
-        }
+        private void MostrarError(string m) { lblMensaje.Foreground = Brushes.Red; lblMensaje.Text = m; }
     }
 }
