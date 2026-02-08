@@ -1,0 +1,38 @@
+﻿<Window x:Class="LoginPractica.GameDetailsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Detalles de Juego" Height="500" Width="800"
+        WindowStartupLocation="CenterScreen" Background="#171a21" ResizeMode="NoResize">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Margin="25" CornerRadius="8" Background="#000">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" BlurRadius="20" ShadowDepth="5" Opacity="0.7"/>
+            </Border.Effect>
+            <Image x:Name="imgCaratula" Stretch="Uniform"/>
+        </Border>
+
+        <StackPanel Grid.Column="1" Margin="20,40,20,20">
+            <TextBlock x:Name="lblTitulo" Text="TITULO JUEGO" Foreground="White" FontSize="32" FontWeight="Bold" TextWrapping="Wrap" Margin="0,0,0,5"/>
+            <Border Background="#2a475e" HorizontalAlignment="Left" CornerRadius="3" Padding="5,2" Margin="0,0,0,20">
+                <TextBlock x:Name="lblCategoria" Text="CATEGORÍA" Foreground="#66c0f4" FontWeight="Bold" FontSize="12"/>
+            </Border>
+
+            <TextBlock Text="DESCRIPCIÓN" Foreground="#8f98a0" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBlock x:Name="lblDescripcion" Text="..." Foreground="#c7d5e0" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,30" Height="120"/>
+
+            <Separator Background="#2a475e" Margin="0,0,0,20"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Text="PRECIO:" Foreground="#8f98a0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock x:Name="lblPrecio" Text="00.00€" Foreground="#5c7e10" FontSize="30" FontWeight="Bold" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Button Content="CERRAR VENTANA" Click="BtnCerrar_Click" Background="Transparent" BorderBrush="#2a475e" BorderThickness="1" Foreground="#8f98a0" Margin="0,30,0,0" Padding="10" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>

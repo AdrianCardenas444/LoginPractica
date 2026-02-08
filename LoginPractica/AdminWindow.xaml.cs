@@ -9,101 +9,147 @@ namespace LoginPractica
     public partial class AdminWindow : Window
     {
         private DatabaseHelper db = new DatabaseHelper();
-        private DataTable dtUsuarios;
-        private string adminNombre;
+        private string adminName;
 
         public AdminWindow(string admin)
         {
             InitializeComponent();
-            this.adminNombre = admin;
-            CargarTodo();
+            adminName = admin;
+            RecargarTodo();
         }
 
-        private void CargarTodo()
+        private void RecargarTodo()
         {
-            dtUsuarios = db.ObtenerUsuarios();
-            gridUsuarios.ItemsSource = dtUsuarios.DefaultView;
-            ActualizarLogs();
-        }
+            // Usuarios (Importante: Asignamos DefaultView para poder filtrar)
+            gridUsuarios.ItemsSource = db.ObtenerUsuarios().DefaultView;
 
-        // --- BUSCADOR DINÁMICO (Requisito 3) ---
-        private void TxtBusquedaAdmin_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (dtUsuarios != null)
+            // Logs
+            using (var conn = db.GetConnection())
             {
-                // Filtramos la tabla por el nombre de usuario [cite: 47-48]
-                dtUsuarios.DefaultView.RowFilter = $"nombre_usuario LIKE '%{txtBusquedaAdmin.Text}%'";
+                conn.Open();
+                DataTable dt = new DataTable();
+                new MySqlDataAdapter("SELECT * FROM LogActividad ORDER BY fecha DESC", conn).Fill(dt);
+                gridLogs.ItemsSource = dt.DefaultView;
             }
+            // Juegos
+            gridJuegos.ItemsSource = db.ObtenerJuegos();
         }
 
-        // --- MOSTRAR LOGS (Extensión) ---
-        private void ActualizarLogs()
+        private void BtnCerrar_Click(object sender, RoutedEventArgs e) => this.Close();
+
+        // --- BUSCADOR DE USUARIOS (NUEVO) ---
+        private void TxtBusquedaUser_TextChanged(object sender, TextChangedEventArgs e)
         {
-            DataTable dtLogs = new DataTable();
-            using (MySqlConnection conn = db.GetConnection())
+            try
             {
-                try
+                // Obtenemos la Vista de Datos de la tabla
+                DataView dv = gridUsuarios.ItemsSource as DataView;
+                if (dv != null)
                 {
-                    conn.Open();
-                    string query = "SELECT admin_usuario as 'Admin', accion as 'Acción', usuario_afectado as 'Afectado', fecha as 'Fecha' FROM LogActividad ORDER BY fecha DESC";
-                    MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
-                    adapter.Fill(dtLogs);
-                    gridLogs.ItemsSource = dtLogs.DefaultView;
+                    string filtro = txtBusquedaUser.Text.Trim();
+                    // Filtramos por Nombre de Usuario O por Email
+                    if (string.IsNullOrEmpty(filtro))
+                    {
+                        dv.RowFilter = ""; // Sin filtro
+                    }
+                    else
+                    {
+                        dv.RowFilter = $"nombre_usuario LIKE '%{filtro}%' OR email LIKE '%{filtro}%'";
+                    }
                 }
-                catch { }
             }
+            catch { }
         }
 
+        // --- USUARIOS ---
         private void GridUsuarios_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (gridUsuarios.SelectedItem is DataRowView fila)
+            if (gridUsuarios.SelectedItem is DataRowView r)
             {
-                txtId.Text = fila["id"].ToString();
-                txtUser.Text = fila["nombre_usuario"].ToString();
-                txtPass.Text = fila["password"].ToString();
-                txtEmail.Text = fila["email"].ToString();
-                cmbRol.Text = fila["rol"].ToString();
-                chkBan.IsChecked = fila["estado"].ToString() == "0";
+                txtId.Text = r["id"].ToString();
+                txtUser.Text = r["nombre_usuario"].ToString();
+                txtPass.Text = r["password"].ToString();
+                txtEmail.Text = r["email"].ToString();
+                cmbRol.Text = r["rol"].ToString();
+                chkBan.IsChecked = r["estado"].ToString() == "0";
             }
         }
-
-        // --- ACCIONES CRUD ---
-
         private void BtnEditar_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(txtId.Text)) return;
-            int id = int.Parse(txtId.Text);
-            int est = chkBan.IsChecked == true ? 0 : 1;
-
-            if (db.EditarUsuario(id, txtPass.Text, txtEmail.Text, cmbRol.Text, est))
-            {
-                db.RegistrarLog(adminNombre, "EDITAR/BANEO", txtUser.Text); // [cite: 59-61]
-                CargarTodo();
-                MessageBox.Show("Usuario modificado y acción registrada.");
-            }
+            db.EditarUsuario(int.Parse(txtId.Text), txtPass.Text, txtEmail.Text, cmbRol.Text, chkBan.IsChecked == true ? 0 : 1);
+            db.RegistrarLog(adminName, "EDITAR USER", txtUser.Text); RecargarTodo();
         }
-
         private void BtnCrear_Click(object sender, RoutedEventArgs e)
         {
             if (db.AgregarUsuarioAdmin(txtUser.Text, txtPass.Text, txtEmail.Text, cmbRol.Text))
             {
-                db.RegistrarLog(adminNombre, "CREAR", txtUser.Text);
-                CargarTodo();
-                MessageBox.Show("Nuevo usuario creado.");
+                db.RegistrarLog(adminName, "CREAR USER", txtUser.Text); RecargarTodo();
             }
         }
-
         private void BtnEliminar_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(txtId.Text)) return;
-            if (MessageBox.Show("¿Eliminar usuario permanentemente?", "Baja", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (!string.IsNullOrEmpty(txtId.Text))
             {
                 db.EliminarUsuario(int.Parse(txtId.Text));
-                db.RegistrarLog(adminNombre, "ELIMINAR", txtUser.Text);
-                CargarTodo();
+                db.RegistrarLog(adminName, "ELIMINAR USER", txtUser.Text); RecargarTodo();
             }
         }
 
-        private void BtnCerrar_Click(object sender, RoutedEventArgs e) => this.Close();
+        // --- JUEGOS ---
+
+        private void GridJuegos_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (gridJuegos.SelectedItem is Juego j)
+            {
+                txtJuegoId.Text = j.Id.ToString();
+                txtJuegoTitulo.Text = j.Titulo;
+                txtJuegoCat.Text = j.Categoria;
+                txtJuegoPrecio.Text = j.Precio.ToString();
+                txtJuegoImg.Text = j.ImagenUrl;
+                txtJuegoDesc.Text = j.Descripcion;
+            }
+        }
+
+        private void BtnEditJuego_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtJuegoId.Text)) return;
+            try
+            {
+                int id = int.Parse(txtJuegoId.Text);
+                decimal precio = decimal.Parse(txtJuegoPrecio.Text);
+
+                if (db.EditarJuego(id, txtJuegoTitulo.Text, txtJuegoDesc.Text, precio, txtJuegoCat.Text, txtJuegoImg.Text))
+                {
+                    db.RegistrarLog(adminName, "EDITAR JUEGO", txtJuegoTitulo.Text);
+                    RecargarTodo();
+                    MessageBox.Show("Juego actualizado correctamente.");
+                }
+            }
+            catch { MessageBox.Show("Error: Revisa que el precio sea numérico."); }
+        }
+
+        private void BtnAddJuego_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (db.AgregarJuego(txtJuegoTitulo.Text, txtJuegoDesc.Text, decimal.Parse(txtJuegoPrecio.Text), txtJuegoCat.Text, txtJuegoImg.Text))
+                {
+                    db.RegistrarLog(adminName, "ALTA JUEGO", txtJuegoTitulo.Text); RecargarTodo(); MessageBox.Show("Juego creado");
+                }
+            }
+            catch { MessageBox.Show("Revisa los datos"); }
+        }
+
+        private void BtnDelJuego_Click(object sender, RoutedEventArgs e)
+        {
+            if (gridJuegos.SelectedItem is Juego j)
+            {
+                if (MessageBox.Show($"¿Borrar {j.Titulo}?", "Confirmar", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    if (db.EliminarJuego(j.Id)) { db.RegistrarLog(adminName, "BAJA JUEGO", j.Titulo); RecargarTodo(); }
+                }
+            }
+        }
     }
 }

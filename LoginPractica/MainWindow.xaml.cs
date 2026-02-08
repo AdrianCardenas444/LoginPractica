@@ -1,53 +1,81 @@
-﻿using System.Windows;
-using System.Windows.Media;
+﻿using System;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace LoginPractica
 {
     public partial class MainWindow : Window
     {
-        private DatabaseHelper dbHelper = new DatabaseHelper();
+        private DatabaseHelper db = new DatabaseHelper();
 
-        public MainWindow() => InitializeComponent();
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
 
+        // --- INICIO DE SESIÓN ---
         private void BtnLogin_Click(object sender, RoutedEventArgs e)
         {
-            string usuario = txtUsuario.Text.Trim();
-            string pass = txtPassword.Password;
+            // Validamos
+            string resultado = db.ValidarLogin(txtUser.Text, txtPass.Password);
 
-            if (string.IsNullOrEmpty(usuario) || string.IsNullOrEmpty(pass)) { lblMensaje.Text = "Rellena todos los campos"; return; }
-
-            string rol = dbHelper.ValidarLogin(usuario, pass); 
-
-            if (rol == "BANEADO") { lblMensaje.Text = "ACCESO DENEGADO: Usuario baneado."; return; } 
-            if (rol != null) 
+            if (resultado == "BANEADO")
             {
-                new HomeWindow(usuario, rol).Show();
+                lblError.Text = "ACCESO DENEGADO: Tu cuenta está baneada.";
+            }
+            else if (resultado == "BAD_PASS")
+            {
+                // EL MENSAJE QUE PEDISTE
+                lblError.Text = "La contraseña introducida no es correcta.";
+                txtPass.Clear();
+                txtPass.Focus();
+            }
+            else if (resultado == "NO_USER")
+            {
+                lblError.Text = "El nombre de usuario no existe.";
+                txtUser.Focus();
+            }
+            else if (resultado != null)
+            {
+                // Login Correcto
+                new HomeWindow(txtUser.Text, resultado).Show();
                 this.Close();
-            } 
-            else { lblMensaje.Text = "Usuario o contraseña incorrectos."; }
-        }
-
-        private void BtnRegistro_Click(object sender, RoutedEventArgs e)
-        {
-            string user = txtUsuario.Text.Trim();
-            string pass = txtPassword.Password;
-            string email = txtEmail.Text.Trim();
-
-            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || string.IsNullOrEmpty(email)) 
-            { 
-                lblMensaje.Text = "Para registrarte necesitas Usuario, Pass y Email."; 
-                return; 
             }
-
-            if (dbHelper.AgregarUsuarioAdmin(user, pass, email, "user")) 
+            else
             {
-                lblMensaje.Foreground = Brushes.LightGreen;
-                lblMensaje.Text = "¡Registro exitoso! Ya puedes loguearte.";
+                lblError.Text = "Error de conexión con la base de datos.";
             }
         }
 
-        private void BtnSalir_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
+        // --- CREAR CUENTA (RECUPERADO) ---
+        private void BtnRegister_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtUser.Text) || string.IsNullOrWhiteSpace(txtPass.Password))
+            {
+                lblError.Text = "Para crear cuenta necesitas Usuario y Contraseña.";
+                return;
+            }
 
-        private void MostrarError(string m) { lblMensaje.Foreground = Brushes.Red; lblMensaje.Text = m; }
+            // Intentamos guardar un usuario nuevo (Rol 'user' por defecto)
+            // Usamos el método GuardarUsuario que ya tienes en DatabaseHelper
+            // GuardarUsuario(id, user, pass, email, rol, estado)
+            bool exito = db.GuardarUsuario(null, txtUser.Text, txtPass.Password, txtEmail.Text, "user", 1);
+
+            if (exito)
+            {
+                MessageBox.Show("¡Cuenta creada con éxito! Ahora puedes iniciar sesión.");
+                lblError.Text = "";
+            }
+            else
+            {
+                lblError.Text = "Error: El nombre de usuario ya existe.";
+            }
+        }
+
+        // --- SALIR (RECUPERADO) ---
+        private void BtnSalir_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
     }
 }
